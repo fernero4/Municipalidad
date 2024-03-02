@@ -1,5 +1,10 @@
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save, pre_delete
+from django.dispatch import receiver
+from .models import Auditoria
 
 
 class Oficina(models.Model):
@@ -26,6 +31,15 @@ class Beneficiario(models.Model):
     apellido = models.CharField(max_length=255)
     nombre = models.CharField(max_length=255)
 
+    def clean(self):
+        existing_subsidios = SubsidioDetalle.objects.filter(
+            id_beneficiario=self.id_beneficiario,
+            id_subsidio=self.id_subsidio
+        ).exclude(pk=self.pk)
+        if existing_subsidios.exists():
+            raise ValidationError(
+                'El beneficiario ya está registrado en este subsidio.')
+
 
 class SubsidioDetalle(models.Model):
     id_subsidio_detalle = models.AutoField(primary_key=True)
@@ -34,3 +48,63 @@ class SubsidioDetalle(models.Model):
         'Beneficiario', on_delete=models.CASCADE)
     importe = models.DecimalField(max_digits=10, decimal_places=2)
     estado = models.CharField(max_length=255)
+
+    def clean(self):
+        existing_subsidios = SubsidioDetalle.objects.filter(
+            id_beneficiario=self.id_beneficiario,
+            id_subsidio__oficina_solicitante__id_oficina=self.id_subsidio.oficina_solicitante.id_oficina,
+            id_subsidio__año=self.id_subsidio.año,
+            id_subsidio__mes=self.id_subsidio.mes
+        ).exclude(pk=self.pk)
+        if existing_subsidios.exists():
+            raise ValidationError(
+                'El beneficiario ya está registrado en subsidios de diferentes oficinas en el mismo año/mes.')
+
+        if self.importe > 1000000:
+            raise ValidationError(
+                'El importe no puede ser superior a $1.000.000,00 por beneficiario.')
+
+
+class Auditoria(models.Model):
+    ACCION_CHOICES = (
+        ('C', 'Creación'),
+        ('M', 'Modificación'),
+        ('E', 'Eliminación'),
+    )
+
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    fecha_hora = models.DateTimeField(default=timezone.now)
+    accion = models.CharField(max_length=1, choices=ACCION_CHOICES)
+    tabla = models.CharField(max_length=255)
+    dato_modificado = models.TextField()
+
+    class Meta:
+        ordering = ['-fecha_hora']
+
+    def __str__(self):
+        return f"{self.usuario} - {self.fecha_hora}"
+
+
+@receiver(post_save)
+def registrar_auditoria_creacion_modificacion(sender, instance, created, **kwargs):
+    if created:
+        accion = 'C'
+    else:
+        accion = 'M'
+
+    Auditoria.objects.create(
+        usuario=instance.usuario,
+        accion=accion,
+        tabla=sender.__name__,
+        dato_modificado=str(instance)
+    )
+
+
+@receiver(pre_delete)
+def registrar_auditoria_eliminacion(sender, instance, **kwargs):
+    Auditoria.objects.create(
+        usuario=instance.usuario,
+        accion='E',
+        tabla=sender.__name__,
+        dato_modificado=str(instance)
+    )
