@@ -1,24 +1,22 @@
 from django.db import models
+from django.utils import timezone
+
+
+class Oficina(models.Model):
+    id_oficina = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=255, null=True, blank=True)
 
 
 class Subsidio(models.Model):
     id_subsidio = models.AutoField(primary_key=True)
-    descripcion = models.CharField(max_length=255)
+    descripcion = models.CharField(max_length=255, null=True, blank=True)
     oficina_solicitante = models.ForeignKey(
-        'Oficina', on_delete=models.CASCADE)
+        'Oficina', null=True, blank=True, on_delete=models.CASCADE)
+    fecha_alta = models.DateField(default=timezone.now, null=True, blank=True)
     año = models.IntegerField()
     mes = models.IntegerField()
     estado = models.CharField(max_length=2, choices=(
         ('AC', 'Activo'), ('BA', 'Baja')))
-
-
-class SubsidioDetalle(models.Model):
-    id_subsidio_detalle = models.AutoField(primary_key=True)
-    id_subsidio = models.ForeignKey('Subsidio', on_delete=models.CASCADE)
-    id_beneficiario = models.ForeignKey(
-        'Beneficiario', on_delete=models.CASCADE)
-    importe = models.DecimalField(max_digits=10, decimal_places=2)
-    estado = models.CharField(max_length=255)
 
 
 class Beneficiario(models.Model):
@@ -29,6 +27,10 @@ class Beneficiario(models.Model):
     nombre = models.CharField(max_length=255)
 
 
-class Oficina(models.Model):
-    id_oficina = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=255)
+class SubsidioDetalle(models.Model):
+    id_subsidio_detalle = models.AutoField(primary_key=True)
+    id_subsidio = models.ForeignKey('Subsidio', on_delete=models.CASCADE)
+    id_beneficiario = models.ForeignKey(
+        'Beneficiario', on_delete=models.CASCADE)
+    importe = models.DecimalField(max_digits=10, decimal_places=2)
+    estado = models.CharField(max_length=255)
