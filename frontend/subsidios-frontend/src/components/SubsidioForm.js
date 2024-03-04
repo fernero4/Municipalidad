@@ -4,6 +4,9 @@ import ModalAgregarSubsidio from './ModalAgregarSubsidio';
 import ModalAgregarOficina from './ModalAgregarOficina';
 import ModalAgregarBeneficiario from './ModalAgregarBeneficiario';
 import ModalAgregarSubsidioDetalle from './ModalAgregarSubsidioDetalle';
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
+
 
 import { useNavigate } from "react-router-dom";
 
@@ -45,7 +48,8 @@ function SubsidioForm() {
     }
     cargarOficinas();
     cargarBeneficiarios();
-    axios.get('http://127.0.0.1:8000/subsidios/subsidio/', {
+    getDatosGrilla();
+    axios.get('http://127.0.0.1:8000/subsidios/subsidiogrilla/', {
       headers: {
         Authorization: `Token ${token}`,
       },
@@ -110,7 +114,7 @@ function SubsidioForm() {
   };
 
   const getDatosGrilla = () => {
-    axios.get('http://127.0.0.1:8000/subsidios/subsidio/', {
+    axios.get('http://127.0.0.1:8000/subsidios/subsidiogrilla/', {
       headers: {
         Authorization: `Token ${token}`,
       },
@@ -235,7 +239,36 @@ function SubsidioForm() {
     });
   };
 
+  const exportarPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Subsidios', 10, 10);
+    subsidios.forEach((subsidio, index) => {
+      let posY = 20 + index * 40; 
+      doc.text(`${index + 1}. ID: ${subsidio.id_subsidio}`, 10, posY);
+      posY += 5;
+      doc.text(`   Descripción: ${subsidio.descripcion}`, 10, posY);
+      posY += 5;
+      doc.text(`   Oficina Solicitante: ${subsidio.oficina_solicitante_nombre}`, 10, posY);
+      posY += 5;
+      doc.text(`   Fecha Alta: ${subsidio.fecha_alta}`, 10, posY);
+      posY += 5;
+      doc.text(`   Año: ${subsidio.anio}`, 10, posY);
+      posY += 5;
+      doc.text(`   Mes: ${subsidio.mes}`, 10, posY);
+      posY += 5;
+      doc.text(`   Estado: ${subsidio.estado}`, 10, posY);
+      posY += 15;
+    });
+    doc.save('subsidios.pdf');
+};
 
+
+  const exportarExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(subsidios);
+    XLSX.utils.book_append_sheet(wb, ws, 'Subsidios');
+    XLSX.writeFile(wb, 'subsidios.xlsx');
+  };
   
 
   return (
@@ -328,14 +361,25 @@ function SubsidioForm() {
 </div>
     <button onClick={agregarNuevaOficina}>Agregar Oficina</button>
     <button onClick={handleMostrarModalBeneficiario}>Agregar Beneficiario</button>
-    <button onClick={handleMostrarModalSubsidioDetalle}>Agregar Subsidio Detalle</button>
+    <button onClick={handleMostrarModalSubsidioDetalle}>Agregar Detalle</button>
     <button onClick={() => setMostrarModalSubsidio(true)}>Agregar Subsidio</button>
+    <button onClick={exportarPDF}>Exportar a PDF</button>
+    <button onClick={exportarExcel}>Exportar a Excel</button>
     <SubsidiosGrid subsidios={subsidios} setSubsidios={setSubsidios} setMostrarModalConfirmacion={setMostrarModalConfirmacion} setIdSubsidioEliminar={setIdSubsidioEliminar} />
   </div>
   );
 }
 
 function SubsidiosGrid({ subsidios, setSubsidios, setMostrarModalConfirmacion, setIdSubsidioEliminar }) {
+
+  const [detallesVisibles, setDetallesVisibles] = useState({});
+  const handleToggleDetalles = (idSubsidio) => {
+    setDetallesVisibles(prevState => ({
+      ...prevState,
+      [idSubsidio]: !prevState[idSubsidio]
+    }));
+  };
+
   const handleImprimir = (idSubsidio) => {
       window.open(`http://127.0.0.1:8000/subsidios/imprimir_subsidio/${idSubsidio}`, '_blank');
   };
@@ -357,26 +401,43 @@ function SubsidiosGrid({ subsidios, setSubsidios, setMostrarModalConfirmacion, s
               <th>Mes</th>
               <th>Estado</th>
               <th>Acciones</th>
+              <th>Detalles</th> 
             </tr>
           </thead>
           <tbody>
             {subsidios.map(subsidio => (
-              <tr key={subsidio.id}>
-                <td>{subsidio.id_subsidio}</td>
-                <td>{subsidio.descripcion}</td>
-                <td>{subsidio.oficina_solicitante_nombre}</td>
-                <td>{subsidio.fecha_alta}</td>
-                <td>{subsidio.anio}</td>
-                <td>{subsidio.mes}</td>
-                <td>{subsidio.estado}</td>
-                <td>
+              <React.Fragment key={subsidio.id}>
+                <tr>
+                  <td>{subsidio.id_subsidio}</td>
+                  <td>{subsidio.descripcion}</td>
+                  <td>{subsidio.oficina_solicitante_nombre}</td>
+                  <td>{subsidio.fecha_alta}</td>
+                  <td>{subsidio.anio}</td>
+                  <td>{subsidio.mes}</td>
+                  <td>{subsidio.estado}</td>
+                  <td>
                     <button onClick={() => {
-                        setIdSubsidioEliminar(subsidio.id_subsidio);
-                        setMostrarModalConfirmacion(true);
+                      setIdSubsidioEliminar(subsidio.id_subsidio);
+                      setMostrarModalConfirmacion(true);
                     }}>Eliminar</button>
                     <button onClick={() => handleImprimir(subsidio.id_subsidio)}>Imprimir</button>
-                </td>
-              </tr>
+                  </td>
+                  <td>
+                    <button onClick={() => handleToggleDetalles(subsidio.id_subsidio)}>
+                      {detallesVisibles[subsidio.id_subsidio] ? 'Ocultar Detalles' : 'Mostrar Detalles'}
+                    </button>
+                  </td>
+                </tr>
+                {detallesVisibles[subsidio.id_subsidio] && (
+                  <tr>
+                    <td colSpan="8"> {/*  */}
+                      <h3>Detalles del Subsidio</h3>
+                      <p>Importe: {subsidio.importe}</p>
+                      <p>Estado: {subsidio.estado_detalle}</p>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
@@ -386,3 +447,4 @@ function SubsidiosGrid({ subsidios, setSubsidios, setMostrarModalConfirmacion, s
 }
 
 export default SubsidioForm;
+

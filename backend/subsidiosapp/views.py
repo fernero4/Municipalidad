@@ -142,6 +142,43 @@ class SubsidioAPIView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 
+class SubsidioAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk=0):
+        data = []
+
+        if pk == 0:
+            subsidios = Subsidio.objects.all()
+            subsidio_serializer = SubsidioSerializer(subsidios, many=True)
+            for subsidio in subsidio_serializer.data:
+                subsidio_temp = dict(subsidio)
+                subsidio_temp['fecha_alta'] = datetime.strptime(
+                    subsidio['fecha_alta'], '%Y-%m-%d').strftime('%d-%m-%Y')
+                oficina = Oficina.objects.get(
+                    id_oficina=subsidio['oficina_solicitante'])
+                subsidio_temp['oficina_solicitante_nombre'] = oficina.nombre
+
+                # Buscar detalles de subsidio y agregar importe y estado si existen
+                detalles = SubsidioDetalle.objects.filter(
+                    id_subsidio=subsidio['id_subsidio'])
+                if detalles.exists():
+                    detalle = detalles.first()
+                    subsidio_temp['importe'] = detalle.importe
+                    subsidio_temp['estado_detalle'] = detalle.estado
+
+                data.append(subsidio_temp)
+            return Response(data)
+        else:
+            try:
+                subsidio = Subsidio.objects.get(id_subsidio=pk)
+                subsidio_serializer = SubsidioSerializer(subsidio)
+                return Response(subsidio_serializer.data)
+            except Subsidio.DoesNotExist:
+                raise NotFound(detail="Subsidio no encontrado")
+
+
 class SubsidioDetalleAPIView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -178,34 +215,80 @@ class SubsidioDetalleAPIView(APIView):
         else:
             return Response(subsidio_detalle_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self, request, pk):
+        try:
+            detalle_subsidio = SubsidioDetalle.objects.get(
+                id_subsidio_detalle=pk)
+            detalle_subsidio.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except SubsidioDetalle.DoesNotExist:
+            raise NotFound(detail="Detalle de subsidio no encontrado")
+
 
 class ListarSubsidiosPersona(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, id_persona):
-        subsidios = Subsidio.objects.filter(beneficiario__id=id_persona)
+    def get(self, request, nombre_apellido):
+        beneficiarios = Beneficiario.objects.filter(
+            apellido__icontains=nombre_apellido) | Beneficiario.objects.filter(
+            nombre__icontains=nombre_apellido)
+        subsidios = Subsidio.objects.filter(
+            subsidiodetalle__id_beneficiario__in=beneficiarios.values_list('id_beneficiario', flat=True))
         serializer = SubsidioSerializer(subsidios, many=True)
-        return Response(serializer.data)
+        data = []
+        for subsidio in serializer.data:
+            subsidio_temp = dict(subsidio)
+            subsidio_temp['fecha_alta'] = datetime.strptime(
+                subsidio['fecha_alta'], '%Y-%m-%d').strftime('%d-%m-%Y')
+            oficina = Oficina.objects.get(
+                id_oficina=subsidio['oficina_solicitante'])
+            subsidio_temp['oficina_solicitante_nombre'] = oficina.nombre
+
+            detalles = SubsidioDetalle.objects.filter(
+                id_subsidio=subsidio['id_subsidio'])
+            if detalles.exists():
+                detalle = detalles.first()
+                subsidio_temp['importe'] = detalle.importe
+                subsidio_temp['estado_detalle'] = detalle.estado
+
+            data.append(subsidio_temp)
+        return Response(data)
 
 
 class ListarSubsidiosOficina(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, id_oficina, fecha_inicio, fecha_fin):
-        print(f'Fecha inicio: {fecha_inicio}')
-        print(f'Fecha fin: {fecha_fin}')
-        print(f'Id oficina: {id_oficina}')
-
-        oficina = Oficina.objects.get(nombre=id_oficina)
+    def get(self, request, nombre_oficina, fecha_inicio, fecha_fin):
+        oficina = Oficina.objects.get(nombre=nombre_oficina)
         pk = oficina.id_oficina
 
         subsidios = Subsidio.objects.filter(
             oficina_solicitante_id=pk, fecha_alta__range=[fecha_inicio, fecha_fin])
 
-        serializer = SubsidioSerializer(subsidios, many=True)
-        return Response(serializer.data)
+        data = []
+        for subsidio in subsidios:
+            subsidio_data = {
+                'id_subsidio': subsidio.id_subsidio,
+                'descripcion': subsidio.descripcion,
+                'oficina_solicitante_nombre': oficina.nombre,
+                'fecha_alta': subsidio.fecha_alta.strftime('%d-%m-%Y'),
+                'anio': subsidio.anio,
+                'mes': subsidio.mes,
+                'estado': subsidio.estado,
+            }
+
+            detalles = SubsidioDetalle.objects.filter(
+                id_subsidio=subsidio.id_subsidio)
+            if detalles.exists():
+                detalle = detalles.first()
+                subsidio_data['importe'] = detalle.importe
+                subsidio_data['estado_detalle'] = detalle.estado
+
+            data.append(subsidio_data)
+
+        return Response(data)
 
 
 class ExportSubsidiosExcel(APIView):

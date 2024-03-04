@@ -6,8 +6,4 @@ psycopg-binary
 psycopg
 nodeenv
 reportlab
-
-
-# npm install react-router-dom
-# npm install axios
-# pip install django psycopg2
+openpyxl

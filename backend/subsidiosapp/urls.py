@@ -8,14 +8,19 @@ urlpatterns = [
          name='oficina'),
     path('beneficiario/', BeneficiarioAPIView.as_view(), name='beneficiario'),
     path('subsidio/', SubsidioAPIView.as_view(), name='subsidio'),
+    path('subsidio/<int:pk>/', SubsidioAPIView.as_view(), name='subsidio'),
+
+    path('subsidiogrilla/', SubsidioAPIView.as_view(), name='subsidiogrilla'),
     path('subsidiodetalle/', SubsidioDetalleAPIView.as_view(),
          name='subsidiodetalle'),
-    path('subsidio/<int:pk>/', SubsidioAPIView.as_view(), name='subsidio'),
-    path('listarporpersona/', ListarSubsidiosPersona.as_view(),
-         name='listarporpersona'),
+    path('subsidiodetalle/<int:pk>/', SubsidioDetalleAPIView.as_view(),
+         name='subsidiodetalle'),
+    path('listarporpersona/<str:nombre_apellido>/',
+         ListarSubsidiosPersona.as_view(), name='listarporpersona'),
+
     #     path('listarsubsidioporfecha/',
     #          ListarSubsidiosOficina.as_view(), name='listarsubsidio'),
-    path('listarsubsidio/<str:id_oficina>/<str:fecha_inicio>/<str:fecha_fin>/',
+    path('listarsubsidio/<str:nombre_oficina>/<str:fecha_inicio>/<str:fecha_fin>/',
          ListarSubsidiosOficina.as_view(), name='listarsubsidio'),
 
     path('exportarlistado/', ExportSubsidiosExcel.as_view(), name='exportarlistado'),
