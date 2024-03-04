@@ -21,6 +21,7 @@ class CustomUserManager(BaseUserManager):
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    id_usuario = models.AutoField(primary_key=True, unique=True)
     email = models.EmailField(unique=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -29,5 +30,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
 
+    class Meta:
+        verbose_name = 'Usuario'
+        verbose_name_plural = 'Usuarios'
+        ordering = ['id_usuario']
+
     def __str__(self):
-        return self.email
+        txt = "usuario: {0} "
+        return txt.format(self.id_usuario)

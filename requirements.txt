@@ -5,3 +5,9 @@ python-decouple
 psycopg-binary
 psycopg
 nodeenv
+
+
+
+# npm install react-router-dom
+# npm install axios
+# pip install django psycopg2

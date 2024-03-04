@@ -37,8 +37,10 @@ LOCAL_APPS = [
 THIRD_APPS = [
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
 ]
 
+INSTALLED_APPS = THIRD_APPS + LOCAL_APPS + BASE_APPS
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -50,6 +52,7 @@ CORS_ORIGIN_WHITELIST = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -107,7 +110,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTH_USER_MODEL = 'subsidios.CustomUser'
+AUTH_USER_MODEL = 'users.CustomUser'
 
 
 LANGUAGE_CODE = 'es-AR'

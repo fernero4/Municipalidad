@@ -36,3 +36,47 @@
     transform: rotate(360deg);
   }
 }
+
+
+.registro-container,
+.login-container {
+    width: 300px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #f4f4f4;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+input,
+button {
+    margin: 10px 0;
+    padding: 8px;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    background-color: #57a1f8;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #3f85f8;
+}
+
+p {
+    margin-top: 20px;
+}
+
+p button {
+    background: none;
+    border: none;
+    color: #57a1f8;
+    text-decoration: underline;
+    cursor: pointer;
+}

@@ -1,10 +1,11 @@
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from django.contrib.auth.models import User
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
-from .models import Auditoria
+from django.conf import settings
+from django.db import models
+from django.contrib.auth import get_user_model
 
 
 class Oficina(models.Model):
@@ -18,7 +19,7 @@ class Subsidio(models.Model):
     oficina_solicitante = models.ForeignKey(
         'Oficina', null=True, blank=True, on_delete=models.CASCADE)
     fecha_alta = models.DateField(default=timezone.now, null=True, blank=True)
-    año = models.IntegerField()
+    anio = models.IntegerField()
     mes = models.IntegerField()
     estado = models.CharField(max_length=2, choices=(
         ('AC', 'Activo'), ('BA', 'Baja')))
@@ -53,7 +54,7 @@ class SubsidioDetalle(models.Model):
         existing_subsidios = SubsidioDetalle.objects.filter(
             id_beneficiario=self.id_beneficiario,
             id_subsidio__oficina_solicitante__id_oficina=self.id_subsidio.oficina_solicitante.id_oficina,
-            id_subsidio__año=self.id_subsidio.año,
+            id_subsidio__anio=self.id_subsidio.anio,
             id_subsidio__mes=self.id_subsidio.mes
         ).exclude(pk=self.pk)
         if existing_subsidios.exists():
@@ -72,7 +73,8 @@ class Auditoria(models.Model):
         ('E', 'Eliminación'),
     )
 
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     fecha_hora = models.DateTimeField(default=timezone.now)
     accion = models.CharField(max_length=1, choices=ACCION_CHOICES)
     tabla = models.CharField(max_length=255)
@@ -85,8 +87,11 @@ class Auditoria(models.Model):
         return f"{self.usuario} - {self.fecha_hora}"
 
 
-@receiver(post_save)
+@receiver(post_save, sender=get_user_model())
 def registrar_auditoria_creacion_modificacion(sender, instance, created, **kwargs):
+    if not isinstance(instance, Auditoria):
+        return
+
     if created:
         accion = 'C'
     else:
@@ -100,8 +105,11 @@ def registrar_auditoria_creacion_modificacion(sender, instance, created, **kwarg
     )
 
 
-@receiver(pre_delete)
+@receiver(pre_delete, sender=get_user_model())
 def registrar_auditoria_eliminacion(sender, instance, **kwargs):
+    if not isinstance(instance, Auditoria):
+        return
+
     Auditoria.objects.create(
         usuario=instance.usuario,
         accion='E',
