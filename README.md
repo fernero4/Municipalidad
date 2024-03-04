@@ -21,28 +21,25 @@ En Windows:
 .\env\Scripts\activate
 En Linux/MacOS:
 source env/bin/activate
-
-Instalar dependencias:
-
 pip install -r requirements.txt
 
-Configurar la base de datos PostgreSQL
+*Configurar la base de datos PostgreSQL*
 
 Crear una base de datos en PostgreSQL con los siguientes datos:
 
 Nombre: subsidio_bd
 Contraseña: root
 
-Migrar la base de datos y crear un superusuario
+*Migrar la base de datos*
 
 python manage.py makemigrations
 python manage.py migrate
 
-Correr servidor:
+*Correr servidor:*
 
   python manage.py runserver
 
-Instalación del frontend (ReactJS)
+*Instalación del frontend (ReactJS)*
 
 En la carpeta frontend\subsidios-frontend:
 
@@ -50,13 +47,13 @@ Verificar que nodeenv se instalo correctamente:
 
   nodeenv --version
 
-Instalar dependencias del frontend
+*Instalar dependencias del frontend*
 
 npm install react-router-dom
 npm install axios
 npm install jspdf xlsx
 
-Poner en marcha el frontend (se abrirá el navegador en la direccion http://localhost:3000/)
+*Poner en marcha el frontend (se abrirá el navegador en la direccion http://localhost:3000/)*
 
 npm start
 
