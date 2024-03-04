@@ -10,6 +10,9 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from openpyxl import Workbook
 from django.http import HttpResponse
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 
 
 class OficinaAPIView(APIView):
@@ -234,3 +237,80 @@ class ExportSubsidiosExcel(APIView):
         workbook.save(response)
 
         return response
+
+
+class ImprimirSubsidioAPIView(APIView):
+    def get(self, request, id_subsidio):
+        try:
+            subsidio = Subsidio.objects.get(id_subsidio=id_subsidio)
+            subsidio_data = {
+                'id_subsidio': subsidio.id_subsidio,
+                'descripcion': subsidio.descripcion,
+                'fecha_alta': subsidio.fecha_alta.strftime('%d-%m-%Y'),
+                'anio': subsidio.anio,
+                'mes': subsidio.mes,
+                'estado': subsidio.estado,
+            }
+
+            try:
+                subsidio_detalle = SubsidioDetalle.objects.get(
+                    id_subsidio=subsidio)
+                beneficiario = subsidio_detalle.id_beneficiario
+                subsidio_data.update({
+                    'id_subsidio_detalle': subsidio_detalle.id_subsidio_detalle,
+                    'importe': subsidio_detalle.importe,
+                    'estado_subsidio_detalle': subsidio_detalle.estado,
+                    'id_beneficiario': beneficiario.id_beneficiario,
+                    'tipo_documento_beneficiario': beneficiario.tipo_documento,
+                    'numero_documento_beneficiario': beneficiario.numero_documento,
+                    'apellido_beneficiario': beneficiario.apellido,
+                    'nombre_beneficiario': beneficiario.nombre,
+                })
+            except SubsidioDetalle.DoesNotExist:
+                pass
+
+            buffer = BytesIO()
+            pdf = canvas.Canvas(buffer)
+            pdf.drawString(
+                100, 800, f"ID Subsidio: {subsidio_data['id_subsidio']}")
+            pdf.drawString(
+                100, 780, f"Descripción: {subsidio_data['descripcion']}")
+            pdf.drawString(
+                100, 760, f"Fecha Alta: {subsidio_data['fecha_alta']}")
+            pdf.drawString(100, 740, f"Año: {subsidio_data['anio']}")
+            pdf.drawString(100, 720, f"Mes: {subsidio_data['mes']}")
+            pdf.drawString(100, 700, f"Estado: {subsidio_data['estado']}")
+
+            if 'id_subsidio_detalle' in subsidio_data:
+                pdf.drawString(
+                    100, 680, f"ID Subsidio Detalle: {subsidio_data['id_subsidio_detalle']}")
+                pdf.drawString(
+                    100, 660, f"Importe: {subsidio_data['importe']}")
+                pdf.drawString(
+                    100, 640, f"Estado Subsidio Detalle: {subsidio_data['estado_subsidio_detalle']}")
+                pdf.drawString(
+                    100, 620, f"ID Beneficiario: {subsidio_data['id_beneficiario']}")
+                pdf.drawString(
+                    100, 600, f"Tipo Documento Beneficiario: {subsidio_data['tipo_documento_beneficiario']}")
+                pdf.drawString(
+                    100, 580, f"Número Documento Beneficiario: {subsidio_data['numero_documento_beneficiario']}")
+                pdf.drawString(
+                    100, 560, f"Apellido Beneficiario: {subsidio_data['apellido_beneficiario']}")
+                pdf.drawString(
+                    100, 540, f"Nombre Beneficiario: {subsidio_data['nombre_beneficiario']}")
+
+            pdf.showPage()
+            pdf.save()
+
+            buffer.seek(0)
+            response = HttpResponse(
+                buffer.read(), content_type='application/pdf')
+            response[
+                'Content-Disposition'] = f'attachment; filename=imprimir_subsidio_{id_subsidio}.pdf'
+            return response
+        except Subsidio.DoesNotExist:
+            return Response({'error': 'Subsidio no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        except Beneficiario.DoesNotExist:
+            return Response({'error': 'Beneficiario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

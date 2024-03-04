@@ -8,6 +8,8 @@ urlpatterns = [
          name='oficina'),
     path('beneficiario/', BeneficiarioAPIView.as_view(), name='beneficiario'),
     path('subsidio/', SubsidioAPIView.as_view(), name='subsidio'),
+    path('subsidiodetalle/', SubsidioDetalleAPIView.as_view(),
+         name='subsidiodetalle'),
     path('subsidio/<int:pk>/', SubsidioAPIView.as_view(), name='subsidio'),
     path('listarporpersona/', ListarSubsidiosPersona.as_view(),
          name='listarporpersona'),
@@ -17,4 +19,7 @@ urlpatterns = [
          ListarSubsidiosOficina.as_view(), name='listarsubsidio'),
 
     path('exportarlistado/', ExportSubsidiosExcel.as_view(), name='exportarlistado'),
+    path('imprimir_subsidio/<int:id_subsidio>/',
+         ImprimirSubsidioAPIView.as_view(), name='imprimir_subsidio'),
+
 ]

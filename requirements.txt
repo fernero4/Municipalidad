@@ -5,7 +5,7 @@ python-decouple
 psycopg-binary
 psycopg
 nodeenv
-
+reportlab
 
 
 # npm install react-router-dom

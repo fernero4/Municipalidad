@@ -25,7 +25,7 @@ function ModalAgregarOficina({ onAceptar, onCancelar, token }) {
 
   return (
     <div className="modal">
-      <div className="modal-content">
+      <div className="modal-content modal-content-oficina">
         <h2>Agregar Nueva Oficina</h2>
         <label>Nombre de la Oficina:</label>
         <input type="text" value={nombreOficina} onChange={(e) => setNombreOficina(e.target.value)} />

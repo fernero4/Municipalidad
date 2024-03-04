@@ -2,20 +2,35 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ModalAgregarSubsidio from './ModalAgregarSubsidio';
 import ModalAgregarOficina from './ModalAgregarOficina';
+import ModalAgregarBeneficiario from './ModalAgregarBeneficiario';
+import ModalAgregarSubsidioDetalle from './ModalAgregarSubsidioDetalle';
+
 import { useNavigate } from "react-router-dom";
 
 function SubsidioForm() {
-  const token = localStorage.getItem('token');
   const navigate = useNavigate();
+  // este token es el que se guarda en el localStorage
+  const token = localStorage.getItem('token');
+
+  const [idSubsidioEliminar, setIdSubsidioEliminar] = useState(null);
   const [subsidios, setSubsidios] = useState([]);
+
+  // Estados para manejar los datos de para los desplegables de oficinas y beneficiarios
+  const [oficinas, setOficinas] = useState([]);
+  const [beneficiarios, setBeneficiarios] = useState([]); 
+
+  // Estados para manejar los modales de agregar subsidio, oficina, beneficiario, subsidioDetalle y confirmación para eliminar
   const [mostrarModalSubsidio, setMostrarModalSubsidio] = useState(false);
+  const [mostrarModalBeneficiario, setMostrarModalBeneficiario] = useState(false);
   const [mostrarModalOficina, setMostrarModalOficina] = useState(false);
   const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false);
-  const [idSubsidioEliminar, setIdSubsidioEliminar] = useState(null);
+  const [mostrarModalSubsidioDetalle, setMostrarModalSubsidioDetalle] = useState(false); 
+
   const [filtroPersona, setFiltroPersona] = useState(false);
   const [filtroOficinaFecha, setFiltroOficinaFecha] = useState(false);
-  const [oficinas, setOficinas] = useState([]);
-  
+
+
+
   const [filtros, setFiltros] = useState({
     filtroPersona: '',
     filtroOficina: '',
@@ -29,6 +44,7 @@ function SubsidioForm() {
       return;
     }
     cargarOficinas();
+    cargarBeneficiarios();
     axios.get('http://127.0.0.1:8000/subsidios/subsidio/', {
       headers: {
         Authorization: `Token ${token}`,
@@ -43,9 +59,7 @@ function SubsidioForm() {
       });
   }, [filtros, navigate, token]);
 
-  const agregarNuevaOficina = () => {
-    setMostrarModalOficina(true);
-  };
+  
 
   const handleAceptarSubsidio = (nuevoSubsidio) => {
     setSubsidios([...subsidios, nuevoSubsidio]);
@@ -64,6 +78,20 @@ function SubsidioForm() {
   const handleChangeFiltroOficinaFecha = (e) => {
     setFiltroOficinaFecha(e.target.checked);
     setFiltroPersona(false); 
+  };
+
+ // Manejo de oficina
+  const handleAceptarOficina = () => {
+    setMostrarModalOficina(false);
+    cargarOficinas(); 
+  };
+
+  const handleCancelarOficina = () => {
+    setMostrarModalOficina(false);
+  };
+
+  const agregarNuevaOficina = () => {
+    setMostrarModalOficina(true);
   };
 
   const cargarOficinas = () => {
@@ -126,15 +154,6 @@ function SubsidioForm() {
     });
   };
 
-  const handleAceptarOficina = () => {
-    setMostrarModalOficina(false);
-    cargarOficinas(); 
-  };
-
-  const handleCancelarOficina = () => {
-    setMostrarModalOficina(false);
-  };
-
   const handleConfirmarEliminacion = () => {
     if (idSubsidioEliminar) {
       axios.delete(`http://127.0.0.1:8000/subsidios/subsidio/${idSubsidioEliminar}/`, {
@@ -155,6 +174,69 @@ function SubsidioForm() {
     }
   };
   
+  // Manejo de beneficiario
+  const handleMostrarModalBeneficiario = () => {
+    setMostrarModalBeneficiario(true);
+  };
+
+  const handleCancelarBeneficiario = () => {
+    setMostrarModalBeneficiario(false); // Cierra el modal si se cancela
+  };
+
+  const handleAceptarBeneficiario = (nuevoBeneficiario) => {
+    axios.post('http://127.0.0.1:8000/subsidios/beneficiario/', nuevoBeneficiario, {
+      headers: {
+        Authorization: `Token ${token}`,
+      }
+    })
+    .then(response => {
+      setMostrarModalBeneficiario(false); 
+    })
+    .catch(error => {
+      console.error('Error al agregar beneficiario:', error);
+    });
+  };
+
+  const cargarBeneficiarios = () => {
+    axios.get('http://127.0.0.1:8000/subsidios/beneficiario/', {
+      headers: {
+        Authorization: `Token ${token}`,
+      }
+    })
+      .then(response => {
+        setBeneficiarios(response.data);
+      })
+      .catch(error => {
+        console.error('Error al obtener beneficiarios:', error);
+      });
+  };
+
+
+  // Manejo de subsidio detalle
+  const handleMostrarModalSubsidioDetalle = () => {
+    setMostrarModalSubsidioDetalle(true);
+  };
+
+  const handleCancelarSubsidioDetalle = () => {
+    setMostrarModalSubsidioDetalle(false);
+  };
+
+  const handleAceptarSubsidioDetalle = (nuevoSubsidioDetalle) => {
+    axios.post('http://127.0.0.1:8000/subsidios/subsidiodetalle/', nuevoSubsidioDetalle, {
+      headers: {
+        Authorization: `Token ${token}`,
+      }
+    })
+    .then(response => {
+      setMostrarModalSubsidioDetalle(false);
+    })
+    .catch(error => {
+      console.error('Error al agregar subsidio detalle:', error);
+    });
+  };
+
+
+  
 
   return (
     <div>
@@ -173,6 +255,20 @@ function SubsidioForm() {
           token={token}
         />
       )}
+      {mostrarModalBeneficiario && (
+        <ModalAgregarBeneficiario
+          onAceptar={handleAceptarBeneficiario}
+          onCancelar={handleCancelarBeneficiario}
+        />
+      )}
+      {mostrarModalSubsidioDetalle && (
+      <ModalAgregarSubsidioDetalle
+        onAceptar={handleAceptarSubsidioDetalle}
+        onCancelar={handleCancelarSubsidioDetalle}
+        beneficiarios={beneficiarios} 
+        subsidios={subsidios} 
+      />
+    )}
       {mostrarModalConfirmacion && (
         <div className="modal-container">
           <div className="modal-content">
@@ -231,6 +327,8 @@ function SubsidioForm() {
   </div>
 </div>
     <button onClick={agregarNuevaOficina}>Agregar Oficina</button>
+    <button onClick={handleMostrarModalBeneficiario}>Agregar Beneficiario</button>
+    <button onClick={handleMostrarModalSubsidioDetalle}>Agregar Subsidio Detalle</button>
     <button onClick={() => setMostrarModalSubsidio(true)}>Agregar Subsidio</button>
     <SubsidiosGrid subsidios={subsidios} setSubsidios={setSubsidios} setMostrarModalConfirmacion={setMostrarModalConfirmacion} setIdSubsidioEliminar={setIdSubsidioEliminar} />
   </div>
@@ -238,6 +336,10 @@ function SubsidioForm() {
 }
 
 function SubsidiosGrid({ subsidios, setSubsidios, setMostrarModalConfirmacion, setIdSubsidioEliminar }) {
+  const handleImprimir = (idSubsidio) => {
+      window.open(`http://127.0.0.1:8000/subsidios/imprimir_subsidio/${idSubsidio}`, '_blank');
+  };
+  
   return (
     <div>
       <h2>Grilla de Subsidios</h2>
@@ -268,10 +370,11 @@ function SubsidiosGrid({ subsidios, setSubsidios, setMostrarModalConfirmacion, s
                 <td>{subsidio.mes}</td>
                 <td>{subsidio.estado}</td>
                 <td>
-                  <button onClick={() => {
-                    setIdSubsidioEliminar(subsidio.id_subsidio);
-                    setMostrarModalConfirmacion(true);
-                  }}>Eliminar</button>
+                    <button onClick={() => {
+                        setIdSubsidioEliminar(subsidio.id_subsidio);
+                        setMostrarModalConfirmacion(true);
+                    }}>Eliminar</button>
+                    <button onClick={() => handleImprimir(subsidio.id_subsidio)}>Imprimir</button>
                 </td>
               </tr>
             ))}
