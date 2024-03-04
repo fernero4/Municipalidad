@@ -22,6 +22,10 @@ python -m venv env
 # En Linux/MacOS:
 source env/bin/activate
 
+
+
+
+
 pip install -r requirements.txt
 
 Configurar la base de datos PostgreSQL
