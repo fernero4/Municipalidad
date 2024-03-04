@@ -17,14 +17,12 @@ Instalar dependencias para el backend
 
 cd backend
 python -m venv env
-# En Windows:
+En Windows:
 .\env\Scripts\activate
-# En Linux/MacOS:
+En Linux/MacOS:
 source env/bin/activate
 
-
-
-
+Instalar dependencias:
 
 pip install -r requirements.txt
 
