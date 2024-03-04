@@ -12,9 +12,6 @@
 ### Pasos de instalación
 
 1. **Clonar el repositorio**
-bash
-git clone https://github.com/tu-usuario/pdts-donaciones.git
-cd pdts-donaciones
 
 Instalar dependencias para el backend
 
